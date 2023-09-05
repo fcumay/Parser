@@ -2,8 +2,9 @@ import aiohttp
 import asyncio
 from bs4 import BeautifulSoup
 import re
-from src.db import insert_data_into_mongodb
-from src.db import Section
+
+from src.dao.mongo_connection import MongoDAO
+from src.models import Section
 
 lamoda_urls = {
     Section.women: "https://www.lamoda.ru/women-home/?sitelink=topmenuW",
@@ -13,6 +14,8 @@ lamoda_urls = {
 
 lamoda_base = "https://www.lamoda.ru"
 
+mongo_dao = MongoDAO()
+
 
 async def get_page(session, url):
     try:
@@ -20,10 +23,10 @@ async def get_page(session, url):
             if response.status == 200:
                 return await response.text()
             else:
-                print(f"Ошибка при получении страницы: {response.status}")
+                print(f"Error {response.status}")
                 return None
     except aiohttp.client_exceptions.ServerDisconnectedError:
-        print(f"Ошибка: сервер разорвал соединение, повторяем запрос...")
+        print(f"Try again")
         return await get_page(session, url)  # Повторить запрос
 
 
@@ -111,5 +114,5 @@ async def main(section):
                     clothes_data) for category_url in categories]
             await asyncio.gather(*tasks)
     print(f"\nStart work with DB\n")
-    insert_data_into_mongodb(section, clothes_data)
+    mongo_dao.insert_data_into_mongodb(section, clothes_data)
     print(f"\nFinish work with DB\n")

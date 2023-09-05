@@ -5,18 +5,19 @@ from fastapi import APIRouter, FastAPI
 from fastapi.routing import APIRoute
 
 from src.controller import ExceptionMiddleware
+from src.models import Section
 from src.parser import main
 
 from fastapi import Path
-from src.db import Section, get_data_from_mongodb
+from src.parser import mongo_dao
 import aioredis
 import json
 from datetime import datetime
 
 
+
 async def ping() -> dict:
     return {"Success": True}
-
 
 async def parse_lamoda(section: Section = Path(...)) -> dict:
     asyncio.create_task(main(section))
@@ -29,8 +30,7 @@ async def parse_lamoda(section: Section = Path(...)) -> dict:
 
 
 async def get_lamoda() -> dict:
-    data = get_data_from_mongodb()
-
+    data = mongo_dao.get_items()
     def datetime_handler(x):
         if isinstance(x, datetime):
             return x.isoformat()
