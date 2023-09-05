@@ -15,9 +15,9 @@ import json
 from datetime import datetime
 
 
-
 async def ping() -> dict:
     return {"Success": True}
+
 
 async def parse_lamoda(section: Section = Path(...)) -> dict:
     asyncio.create_task(main(section))
@@ -30,16 +30,22 @@ async def parse_lamoda(section: Section = Path(...)) -> dict:
 
 
 async def get_lamoda() -> dict:
-    data = mongo_dao.get_items()
+    data = mongo_dao.get_data_from_mongodb()
+
     def datetime_handler(x):
         if isinstance(x, datetime):
             return x.isoformat()
         raise TypeError("Unknown type")
 
     json_data = json.dumps([item.dict()
-                           for item in data], default=datetime_handler)
+                            for item in data], default=datetime_handler)
     await redis_pool.setex("lamoda_data", 3600, json_data)
     return {"data": data}
+
+
+async def delete_lamoda_by_id(item_id: str) -> dict:
+    mongo_dao.delete_data_from_mongodb(item_id)
+    return {"Success": f"Deleted item with ID {item_id}"}
 
 
 redis_pool = None
@@ -63,6 +69,10 @@ routes = [
         path="/lamoda/{section}",
         endpoint=parse_lamoda,
         methods=["POST"]),
+    APIRoute(
+        path="/lamoda/{item_id}",
+        endpoint=delete_lamoda_by_id,
+        methods=["DELETE"]),
 ]
 
 app = FastAPI()
