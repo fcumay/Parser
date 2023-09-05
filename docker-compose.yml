@@ -1,0 +1,39 @@
+version: "3.10"
+services:
+
+  app:
+    container_name: "app"
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - MONGODB_URL=mongodb://mongo_db/lamoda_parser
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    networks:
+      - custom
+    depends_on:
+      - mongo_db
+      - redis_cache
+
+  mongo_db:
+    image: mongo:4.4
+    container_name: "mongo_db"
+    ports:
+      - "27017:27017"
+    networks:
+      - custom
+
+  redis_cache:
+    image: redis:latest
+    container_name: "redis_cache"
+    ports:
+      - "6379:6379"
+    networks:
+      - custom
+
+networks:
+  custom:
+    driver: bridge
