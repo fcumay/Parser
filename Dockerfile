@@ -16,4 +16,4 @@ COPY main.py .
 EXPOSE 8000
 
 
-CMD ["pipenv", "run", "uvicorn", "main:app", "--host", "0.0.0.0"]
+CMD ["pipenv", "run", "uvicorn", "main:container_app.app", "--host", "0.0.0.0"]

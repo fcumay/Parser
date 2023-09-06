@@ -1,36 +1,32 @@
 import asyncio
-
 import uvicorn
-from fastapi import APIRouter, FastAPI
-from fastapi.routing import APIRoute
-
-from src.controller import ExceptionMiddleware
+from fastapi import APIRouter
 from src.models import Section
 from src.parser import main
-
 from fastapi import Path
-from src.parser import mongo_dao
+from src.di import container_controller
 import aioredis
 import json
 from datetime import datetime
+from src.di import container_app
+
+router = APIRouter()
 
 
+@router.get("/ping")
 async def ping() -> dict:
     return {"Success": True}
 
 
+@router.post("/lamoda/{section}")
 async def parse_lamoda(section: Section = Path(...)) -> dict:
     asyncio.create_task(main(section))
     return {"Success": "start_parser"}
 
 
-# async def get_lamoda()->dict:
-#     data = get_data_from_mongodb()
-#     return {"data": data}
-
-
+@router.get("/lamoda")
 async def get_lamoda() -> dict:
-    data = mongo_dao.get_data_from_mongodb()
+    data = container_controller.lamoda.get_data_from_mongodb()
 
     def datetime_handler(x):
         if isinstance(x, datetime):
@@ -43,8 +39,9 @@ async def get_lamoda() -> dict:
     return {"data": data}
 
 
+@router.delete("/lamoda/{item_id}")
 async def delete_lamoda_by_id(item_id: str) -> dict:
-    mongo_dao.delete_data_from_mongodb(item_id)
+    container_controller.lamoda.delete_data_from_mongodb(item_id)
     return {"Success": f"Deleted item with ID {item_id}"}
 
 
@@ -62,24 +59,9 @@ async def shutdown():
         await redis_pool.close()
 
 
-routes = [
-    APIRoute(path="/ping", endpoint=ping, methods=["GET"]),
-    APIRoute(path="/lamoda", endpoint=get_lamoda, methods=["GET"]),
-    APIRoute(
-        path="/lamoda/{section}",
-        endpoint=parse_lamoda,
-        methods=["POST"]),
-    APIRoute(
-        path="/lamoda/{item_id}",
-        endpoint=delete_lamoda_by_id,
-        methods=["DELETE"]),
-]
-
-app = FastAPI()
-app.add_event_handler("startup", startup)
-app.add_event_handler("shutdown", shutdown)
-app.include_router(APIRouter(routes=routes))
-app.add_middleware(ExceptionMiddleware)
+container_app.app.add_event_handler("startup", startup)
+container_app.app.add_event_handler("shutdown", shutdown)
+container_app.app.include_router(router)
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(container_app.app, host="0.0.0.0", port=8000)

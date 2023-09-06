@@ -1,14 +1,36 @@
-from fastapi import HTTPException
+from bson.objectid import ObjectId
+from datetime import datetime
+from src.models import ProductModel
 
 
-class ExceptionMiddleware:
-    def __init__(self, app):
-        self.app = app
+class LamodaController:
+    def __init__(self, db):
+        self._db = db
+        self._collection = db.products
 
-    async def __call__(self, scope, receive, send):
-        try:
-            await self.app(scope, receive, send)
-        except Exception as e:
-            raise HTTPException(
-                status_code=500,
-                detail="Server error")
+    @property
+    def collection(self):
+        return self._collection
+
+    def insert_data_into_mongodb(self, section, data):
+        for category_name, products in data.items():
+            for product in products:
+                product_model = ProductModel(
+                    section=section,
+                    category=category_name,
+                    name=product['Name'],
+                    price=product['Price'],
+                    shop=product['Shop'],
+                    creation_time=datetime.now()
+                )
+                self._collection.insert_one(product_model.dict())
+
+    def get_data_from_mongodb(self):
+        data = []
+        for product in self._collection.find():
+            product_model = ProductModel(**product)
+            data.append(product_model)
+        return data
+
+    def delete_data_from_mongodb(self, item_id):
+        self._collection.delete_one({"_id": ObjectId(item_id)})

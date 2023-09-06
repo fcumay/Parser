@@ -2,19 +2,12 @@ import aiohttp
 import asyncio
 from bs4 import BeautifulSoup
 import re
+from src.config import Config
+from src.di import container_controller
+from log_config import setup_logging
+import logging
 
-from src.dao.mongo_connection import MongoDAO
-from src.models import Section
-
-lamoda_urls = {
-    Section.women: "https://www.lamoda.ru/women-home/?sitelink=topmenuW",
-    Section.men: "https://www.lamoda.ru/men-home/?sitelink=topmenuM",
-    Section.kids: "https://www.lamoda.ru/kids-home/?sitelink=topmenuK"
-}
-
-lamoda_base = "https://www.lamoda.ru"
-
-mongo_dao = MongoDAO()
+setup_logging()
 
 
 async def get_page(session, url):
@@ -23,11 +16,11 @@ async def get_page(session, url):
             if response.status == 200:
                 return await response.text()
             else:
-                print(f"Error {response.status}")
+                logging.error(f"Error {response.status}")
                 return None
     except aiohttp.client_exceptions.ServerDisconnectedError:
-        print(f"Try again")
-        return await get_page(session, url)  # Повторить запрос
+        logging.info(f"Try again connect to page")
+        return await get_page(session, url)
 
 
 def parse_lamoda_category(page_content, category_data, category_url):
@@ -75,7 +68,7 @@ def get_number_of_pages(category_content):
             # return int(pages_value)
             return 2
         else:
-            print('No page content in HTML-code')
+            logging.warning(f"No page content in HTML-code")
             return 1
 
 
@@ -85,7 +78,7 @@ def get_categories(page_content):
         categories = []
         for category in soup.find_all(
                 "a", class_="d-header-topmenu-category__link"):
-            category_link = lamoda_base + category["href"]
+            category_link = Config.lamoda.lamoda_base + category["href"]
             categories.append(category_link)
         return categories
     return []
@@ -97,14 +90,14 @@ async def process_category(session, category_url, clothes_data):
         num_pages = get_number_of_pages(category_content)
         for page_number in range(1, num_pages + 1):
             page_url = f"{category_url}?page={page_number}"
-            print(f"{page_url}  {page_number}")
+            logging.debug(f"{page_url}  {page_number}")
             parse_lamoda_category(await get_page(session, page_url), clothes_data, category_url)
 
 
 async def main(section):
     clothes_data = {}
     async with aiohttp.ClientSession() as session:
-        page_content = await get_page(session, lamoda_urls[section])
+        page_content = await get_page(session, Config.lamoda.lamoda_urls[section])
         if page_content:
             categories = get_categories(page_content)
             tasks = [
@@ -113,6 +106,6 @@ async def main(section):
                     category_url,
                     clothes_data) for category_url in categories]
             await asyncio.gather(*tasks)
-    print(f"\nStart work with DB\n")
-    mongo_dao.insert_data_into_mongodb(section, clothes_data)
-    print(f"\nFinish work with DB\n")
+    logging.info(f"Start work with DB")
+    container_controller.lamoda.insert_data_into_mongodb(section, clothes_data)
+    logging.info(f"Finish work with DB")
