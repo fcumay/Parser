@@ -1,6 +1,5 @@
 from bson.objectid import ObjectId
-from datetime import datetime
-from src.models import ProductModel
+from src.models.models_lamoda import ProductModel
 
 
 class LamodaController:
@@ -21,7 +20,6 @@ class LamodaController:
                     name=product['Name'],
                     price=product['Price'],
                     shop=product['Shop'],
-                    creation_time=datetime.now()
                 )
                 self._collection.insert_one(product_model.dict())
 

@@ -1,5 +1,5 @@
 from enum import Enum
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from datetime import datetime
 
 
@@ -15,4 +15,4 @@ class ProductModel(BaseModel):
     name: str
     price: str
     shop: str
-    creation_time: datetime = None
+    creation_time: datetime = Field(default_factory=datetime.now)
