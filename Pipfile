@@ -13,6 +13,7 @@ requests = "*"
 aiohttp = "*"
 pydantic-settings = "*"
 aioredis = "*"
+httpx = "*"
 
 [dev-packages]
 
