@@ -35,6 +35,7 @@ def parse_lamoda_category(page_content, category_data, category_url):
                     "span", class_="x-product-card-description__price-single")
             if product_price_element:
                 product_price = product_price_element.text
+                product_price = int(product_price.replace(' ', '')[:-1])
             else:
                 product_price = "No price information"
 
@@ -86,6 +87,7 @@ def get_categories(page_content):
 
 async def process_category(session, category_url, clothes_data):
     category_content = await get_page(session, category_url)
+
     if category_content:
         num_pages = get_number_of_pages(category_content)
         for page_number in range(1, num_pages + 1):

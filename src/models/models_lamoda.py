@@ -13,6 +13,6 @@ class ProductModel(BaseModel):
     section: Section
     category: str
     name: str
-    price: str
+    price: int
     shop: str
     creation_time: datetime = Field(default_factory=datetime.now)

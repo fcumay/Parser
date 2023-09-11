@@ -28,7 +28,7 @@ class LamodaController:
         for product in self._collection.find():
             product_model = ProductModel(**product)
             data.append(product_model)
-        return data
+        return data[::-1]
 
     def delete_data_from_mongodb(self, item_id):
         self._collection.delete_one({"_id": ObjectId(item_id)})

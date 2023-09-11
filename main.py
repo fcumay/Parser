@@ -34,7 +34,6 @@ async def parse_twitch() -> dict:
 @router.get("/lamoda")
 async def get_lamoda() -> dict:
     data = container_controller.lamoda.get_data_from_mongodb()
-
     def datetime_handler(x):
         if isinstance(x, datetime):
             return x.isoformat()
@@ -55,7 +54,6 @@ async def get_twitch_games() -> dict:
 @router.get("/twitch/streams")
 async def get_twitch_streams() -> dict:
     data = container_controller.twitch.get_streams_from_mongodb()
-    print(f"data streams {data}")
     return {"data": data}
 
 
