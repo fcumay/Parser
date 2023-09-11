@@ -33,7 +33,14 @@ async def parse_twitch() -> dict:
 
 @router.get("/lamoda")
 async def get_lamoda() -> dict:
+    global redis_pool
+    cached_data = await redis_pool.get("lamoda_data")
+
+    if cached_data:
+        return {"data": json.loads(cached_data)}
+
     data = container_controller.lamoda.get_data_from_mongodb()
+
     def datetime_handler(x):
         if isinstance(x, datetime):
             return x.isoformat()
@@ -41,19 +48,54 @@ async def get_lamoda() -> dict:
 
     json_data = json.dumps([item.dict()
                             for item in data], default=datetime_handler)
+
     await redis_pool.setex("lamoda_data", 3600, json_data)
+
     return {"data": data}
 
 
 @router.get("/twitch/games")
 async def get_twitch_games() -> dict:
+    global redis_pool
+
+    cached_data = await redis_pool.get("twitch_games_data")
+
+    if cached_data:
+        return {"data": json.loads(cached_data)}
+
     data = container_controller.twitch.get_games_from_mongodb()
+
+    def datetime_handler(x):
+        if isinstance(x, datetime):
+            return x.isoformat()
+        raise TypeError("Unknown type")
+
+    json_data = json.dumps([item.dict()
+                            for item in data], default=datetime_handler)
+    await redis_pool.setex("twitch_games_data", 3600, json_data)
+
     return {"data": data}
 
 
 @router.get("/twitch/streams")
 async def get_twitch_streams() -> dict:
+    global redis_pool
+    cached_data = await redis_pool.get("twitch_streams_data")
+
+    if cached_data:
+        return {"data": json.loads(cached_data)}
+
     data = container_controller.twitch.get_streams_from_mongodb()
+
+    def datetime_handler(x):
+        if isinstance(x, datetime):
+            return x.isoformat()
+        raise TypeError("Unknown type")
+
+    json_data = json.dumps([item.dict()
+                            for item in data], default=datetime_handler)
+    await redis_pool.setex("twitch_streams_data", 3600, json_data)
+
     return {"data": data}
 
 
