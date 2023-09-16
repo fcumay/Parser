@@ -1,4 +1,3 @@
-from bson.objectid import ObjectId
 from src.models.models_twitch import StreamModel, GameModel
 
 
@@ -28,8 +27,19 @@ class TwitchController:
             data.append(game_model)
         return data
 
+    def update_game_in_mongodb(self, item_id, update_data):
+        del update_data["id"]
+        result = self._games.update_one({"id": item_id}, {"$set": update_data})
+        return result
+
+    def update_stream_in_mongodb(self, item_id, update_data):
+        del update_data["id"]
+        result = self._streams.update_one(
+            {"id": item_id}, {"$set": update_data})
+        return result
+
     def delete_streams_from_mongodb(self, item_id):
-        self._streams.delete_one({"_id": ObjectId(item_id)})
+        self._streams.delete_one({"id": item_id})
 
     def delete_games_from_mongodb(self, item_id):
-        self._games.delete_one({"_id": ObjectId(item_id)})
+        self._games.delete_one({"id": item_id})

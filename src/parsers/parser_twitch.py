@@ -1,5 +1,3 @@
-'''WORK'''
-
 import asyncio
 import httpx
 import logging
@@ -7,9 +5,8 @@ from log_config import setup_logging
 from src.di import container_controller
 from src.config import Config
 
-
-
 setup_logging()
+
 
 def get_access_token():
     params = {
@@ -49,8 +46,6 @@ async def get_streams_streamers(headers):
             return streams
         except httpx.HTTPError as e:
             logging.exception(f"Get streams error: {e}")
-
-
 
 
 async def main():

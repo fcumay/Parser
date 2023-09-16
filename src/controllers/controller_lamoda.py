@@ -1,5 +1,5 @@
-from bson.objectid import ObjectId
 from src.models.models_lamoda import ProductModel
+from bson.objectid import ObjectId
 
 
 class LamodaController:
@@ -23,12 +23,17 @@ class LamodaController:
                 )
                 self._collection.insert_one(product_model.dict())
 
-    def get_data_from_mongodb(self):
+    def get_data_from_mongodb(self, limit):
         data = []
-        for product in self._collection.find():
+        for product in self._collection.find().limit(limit):
             product_model = ProductModel(**product)
             data.append(product_model)
         return data[::-1]
+
+    def update_data_in_mongodb(self, item_id, update_data):
+        result = self._collection.update_one(
+            {"_id": ObjectId(item_id)}, {"$set": update_data})
+        return result
 
     def delete_data_from_mongodb(self, item_id):
         self._collection.delete_one({"_id": ObjectId(item_id)})
