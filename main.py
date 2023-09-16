@@ -1,5 +1,4 @@
 import asyncio
-import uvicorn
 from fastapi import APIRouter
 from src.models.models_lamoda import Section
 from fastapi import Path
@@ -10,11 +9,56 @@ from datetime import datetime
 from src.di import container_app
 from src.parsers.parser_lamoda import main as lamoda
 from src.parsers.parser_twitch import main as twitch
+from confluent_kafka import Producer
+from confluent_kafka import Consumer, KafkaError
+import threading
+import logging
+from log_config import setup_logging
+
+setup_logging()
+
+producer = Producer({'bootstrap.servers': 'kafka:9092'})
+consumer = Consumer(
+    {'bootstrap.servers': 'kafka:9092', 'group.id': 'app_consumer_group', 'auto.offset.reset': 'earliest'})
+consumer.subscribe(['parse_task_topic'])
+
+
+async def kafka_start():
+    logging.info("Kafka listen")
+    while True:
+        msg = consumer.poll(1.0)
+        if msg is None:
+            continue
+        if msg.error():
+            if msg.error().code() == KafkaError._PARTITION_EOF:
+                continue
+            else:
+                logging.error(f"Error:{msg.error()}")
+                continue
+        logging.info(f"Received message:{msg.error()}")
+        parse_task = json.loads(msg.value())
+        task_type = parse_task.get("task_type")
+        logging.info(f"Task type: {task_type}")
+        if task_type == "parse_twitch":
+            await twitch()
+        elif task_type == "parse_lamoda":
+            await lamoda(parse_task.get("other_data"))
+
+
+async def send_parse_task_to_kafka(key, data=None):
+    parse_task = {
+        "task_type": key,
+        "other_data": data
+    }
+    logging.info(f"\Send task to kafka")
+    producer.produce('parse_task_topic', key=key, value=json.dumps(parse_task))
+    producer.flush()
+
 
 router = APIRouter()
 
 
-async def cache_data(redis_key, data, cache_time=3600):
+async def cache_data(redis_key, data, cache_time=5):
     global redis_pool
     cached_data = await redis_pool.get(redis_key)
 
@@ -40,13 +84,13 @@ async def ping() -> dict:
 
 @router.post("/lamoda/{section}")
 async def parse_lamoda(section: Section = Path(...)) -> dict:
-    asyncio.create_task(lamoda(section))
+    asyncio.create_task(send_parse_task_to_kafka("parse_lamoda", section))
     return {"Success": "start_lamoda_parser"}
 
 
 @router.post("/twitch")
 async def parse_twitch() -> dict:
-    asyncio.create_task(twitch())
+    asyncio.create_task(send_parse_task_to_kafka("parse_twitch"))
     return {"Success": "start_twitch_parser"}
 
 
@@ -95,6 +139,8 @@ redis_pool = None
 async def startup():
     global redis_pool
     redis_pool = aioredis.from_url("redis://redis_cache:6379")
+    consumer_thread = threading.Thread(target=lambda: asyncio.run(kafka_start()))
+    consumer_thread.start()
 
 
 async def shutdown():
@@ -106,6 +152,3 @@ async def shutdown():
 container_app.app.add_event_handler("startup", startup)
 container_app.app.add_event_handler("shutdown", shutdown)
 container_app.app.include_router(router)
-
-if __name__ == "__main__":
-    uvicorn.run(container_app.app, host="0.0.0.0", port=8000)
