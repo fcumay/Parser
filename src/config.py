@@ -25,8 +25,11 @@ class Twitch(BaseSettings):
     url_games: str = "https://api.twitch.tv/helix/games/top"
     url_streams: str = "https://api.twitch.tv/helix/streams"
 
+class Kafka(BaseSettings):
+    server: str = "kafka:9092"
 
 class Config:
     mongo: Mongo = Mongo()
     lamoda: LamodaUrls = LamodaUrls()
     twitch: Twitch = Twitch()
+    kafka: Kafka = Kafka()
