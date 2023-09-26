@@ -31,9 +31,10 @@ class LamodaController:
         return data[::-1]
 
     def update_data_in_mongodb(self, item_id, update_data):
+        del update_data["id"]
         result = self._collection.update_one(
-            {"_id": ObjectId(item_id)}, {"$set": update_data})
+            {"id": item_id}, {"$set": update_data})
         return result
 
     def delete_data_from_mongodb(self, item_id):
-        self._collection.delete_one({"_id": ObjectId(item_id)})
+        self._collection.delete_one({"id": item_id})

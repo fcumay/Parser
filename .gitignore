@@ -26,6 +26,6 @@ log_config.py
 *~
 .*.sw?
 .cache
-
+src/.env
 # macOS
 .DS_Store
