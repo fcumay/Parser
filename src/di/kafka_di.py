@@ -44,6 +44,6 @@ class ContainerKafka:
             task_type = parse_task.get("task_type")
             logging.info(f"Task type: {task_type}")
             if task_type == "parse_twitch":
-                await self._twitch()
+                await self._twitch.start_parser()
             elif task_type == "parse_lamoda":
-                await self._lamoda(parse_task.get("other_data"))
+                await self._lamoda.start_parser(parse_task.get("other_data"))

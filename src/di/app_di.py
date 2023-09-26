@@ -6,5 +6,5 @@ class ContainerApp:
         self._app = FastAPI()
 
     @property
-    def app(self):
+    def app(self) -> FastAPI:
         return self._app
